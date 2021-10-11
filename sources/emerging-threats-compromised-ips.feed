@@ -1,0 +1,3 @@
+# Feed files must have FEEDURL and FEEDNAME content:
+FEEDURL="https://rules.emergingthreats.net/blockrules/compromised-ips.txt"
+FEEDNAME="emerging-threats-compromised-ips"
