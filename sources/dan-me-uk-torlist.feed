@@ -1,0 +1,3 @@
+# Feed files must have FEEDURL and FEEDNAME content:
+FEEDURL="https://www.dan.me.uk/torlist/"
+FEEDNAME="dan-me-uk-torlist"
