@@ -1,0 +1,3 @@
+# Feed files must have FEEDURL and FEEDNAME content:
+FEEDURL="http://blacklists.co/download/all.txt"
+FEEDNAME="blacklists-co-all"
