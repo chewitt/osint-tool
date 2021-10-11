@@ -1,0 +1,143 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-2.0
+# Copyright: Christian Hewitt <christian.hewitt@fidelissecurity.com>
+
+# Current logic requires all feeds to be updated on the scheduled update frequency. This
+# may not be reliable, for example: if we query some feed hosts too frequently they will
+# refuse connections or return an error instead of valid feed data.
+#
+# To schedule an hourly update (on the hour) set the following crontab:
+# 0 * * * * /bin/bash /opt/osint-tool/osint-tool -d
+
+# set install and publish paths
+INSTALL="/opt/osint-tool"
+OSINTAT="/var/www/html/feeds/osint-attributes.csv"
+OSINTIP="/var/www/html/feeds/osint-ips.csv"
+
+# set allow/block list paths
+ALLOWLIST="${INSTALL}/lists/ipallow.list"
+BLOCKLIST="${INSTALL}/lists/ipblock.list"
+
+# set variables
+TEMPDIR="${INSTALL}/tmp"
+FEEDDIR="${INSTALL}/sources"
+RAWFEED="${TEMPDIR}/rawfeed.csv"
+TMPFEED="${TEMPDIR}/tmpfeed.csv"
+IPFEED="${TEMPDIR}/ipfeed.csv"
+ATFEED="${TEMPDIR}/atfeed.csv"
+
+do_download(){
+  # nuke TEMPDIR and recreate it
+  [ -d "${TEMPDIR}" ] && rm -rf "${TEMPDIR}"
+  mkdir -p "${TEMPDIR}"
+
+  # iterate through the available .feed files
+  find "${FEEDDIR}" -type f -print0 | while IFS= read -r -d $'\0' FEEDFILE;
+  #find "${FEEDDIR}" -name abuse-ch-sslipblacklist-aggressive.feed -print0 | while IFS= read -r -d $'\0' FEEDFILE;
+  do
+    . "${FEEDFILE}" ;
+    [ -z "${FEEDNAME}" ] && echo "error: missing FEEDNAME in ${FEEDFILE}" && exit 1
+    [ -z "${FEEDURL}" ] && echo "error: missing FEEDURL in ${FEEDFILE}" && exit 1
+    RAWFILE="${TEMPDIR}/$(basename ${FEEDFILE%.*}).raw"
+    RAWTEMP="${TEMPDIR}/$(basename ${FEEDFILE%.*}).tmp"
+    RAWSORT="${TEMPDIR}/$(basename ${FEEDFILE%.*}).sort"
+    RAWAT="${TEMPDIR}/$(basename ${FEEDFILE%.*}).attr"
+    RAWIP="${TEMPDIR}/$(basename ${FEEDFILE%.*}).ip"
+
+    # download the feed
+    wget "${FEEDURL}" -O "${RAWFILE}" --no-check-certificate --quiet
+
+    # post-processing if the feed configures it
+    #[ -n "${FEEDHANDLING}" ] && "${FEEDHANDLING}"
+
+    # remove blank lines
+    sed -i '/^$/d' "${RAWFILE}"
+
+    # remove comments
+    sed -i '/^#/d' "${RAWFILE}"
+
+    # remove spaces, form-feeds, new-lines, carriage returns, tabs
+    tr -d '[:space:]' < "${RAWFILE}"
+
+    # extract IP addresses
+    awk -v RS='([0-9]+\\.){3}[0-9]+' 'RT{print RT}' "${RAWFILE}" > "${RAWTEMP}"
+
+    # sort (unique)
+    sort -o "${RAWSORT}" -u "${RAWTEMP}"
+
+    # compare and remove ipallow.list entries
+    [ -f "${ALLOWLIST}" ] && comm -23 "${RAWSORT}" "${ALLOWLIST}" > "${RAWIP}"
+
+    # fork attribute feed from ip feed
+    cp "${RAWIP}" "${RAWAT}"
+
+    # append attributes (comment) to attribute feeed
+    sed -i "s/$/,${FEEDNAME}/g" "${RAWIP}"
+
+    # append attributes (value,param,label,comment) to attribute feeed
+    sed -i "s/$/,MailOriginIP,mime,${FEEDNAME}/g" "${RAWAT}"
+  done
+
+  # check there are *.ip files and combine them
+  IPFILES=( ${TEMPDIR}/*.ip )
+  if (( ${#IPFILES[@]} )); then
+    cat "${TEMPDIR}"/*.ip > "${IPFEED}"
+  else
+    echo "error: no ip feeds to process" && exit 1
+  fi
+
+  # append ipblock.list entries to ip feed
+  if [ -f "${BLOCKLIST}" ]; then
+    sed -i '/^#/d' "${BLOCKLIST}"
+    for IP in $(cat ${BLOCKLIST}); do
+      echo "${IP},ipblocklist" >> "${IPFEED}"
+    done
+  fi
+
+  # check there are *.attrib files and combine them
+  ATTRFILES=( ${TEMPDIR}/*.attr )
+  if (( ${#ATTRFILES[@]} )); then
+    cat "${TEMPDIR}"/*.attr > "${ATFEED}"
+  else
+    echo "error: no attr feeds to process" && exit 1
+  fi
+
+  # append ipblock.list entries to attribute feed
+  if [ -f "${BLOCKLIST}" ]; then
+    sed -i '/^#/d' "${BLOCKLIST}"
+    for IP in $(cat ${BLOCKLIST}); do
+      echo "${IP},MailOriginIP,mime,ipblocklist" >> "${ATFEED}"
+    done
+  fi
+
+  # insert timestamp to files
+  #TIMESTAMP=$(date '+%d/%m/%Y %H:%M:%S')
+  #sed -i "1 i\Feed created: ${TIMESTAMP}" "${ATFEED}"
+  #sed -i "1 i\Feed created: ${TIMESTAMP}" "${IPFEED}"
+
+  # copy feed files to webserver/publish folder
+  cp -fp "${ATFEED}" "${OSINTAT}"
+  cp -fp "${IPFEED}" "${OSINTIP}"
+}
+
+do_help(){
+  echo "osint-tool is a deliberately simple tool for downloading osint feeds"
+  echo ""
+  echo "usage: ./osint-tool -d  : download and process feeds"
+  echo "                    -h  : display help"
+  echo ""
+}
+
+main(){
+  case "$1" in
+    -d)
+      do_download
+      ;;
+    -h|*)
+      do_help
+      ;;
+  esac
+}
+
+main "$@"
+exit
