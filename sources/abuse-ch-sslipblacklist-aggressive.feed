@@ -1,0 +1,3 @@
+# Feed files must have FEEDURL and FEEDNAME content:
+FEEDURL="https://sslbl.abuse.ch/blacklist/sslipblacklist_aggressive.csv"
+FEEDNAME="abuse-ch-sslipblacklist-aggressive"
