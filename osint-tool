@@ -26,6 +26,10 @@ TMPFEED="${TEMPDIR}/tmpfeed.csv"
 IPFEED="${TEMPDIR}/ipfeed.csv"
 ATFEED="${TEMPDIR}/atfeed.csv"
 
+# ensure ipallow.list is sorted
+sort "${ALLOWLIST}" > "${TEMPDIR}/allowlist.sorted"
+cp "${TEMPDIR}/allowlist.sorted" "${ALLOWLIST}"
+
 do_download(){
   # nuke TEMPDIR and recreate it
   [ -d "${TEMPDIR}" ] && rm -rf "${TEMPDIR}"
@@ -33,7 +37,7 @@ do_download(){
 
   # iterate through the available .feed files
   find "${FEEDDIR}" -type f -print0 | while IFS= read -r -d $'\0' FEEDFILE;
-  #find "${FEEDDIR}" -name abuse-ch-sslipblacklist-aggressive.feed -print0 | while IFS= read -r -d $'\0' FEEDFILE;
+  #find "${FEEDDIR}" -name malwareworld-suspiciousips.feed -print0 | while IFS= read -r -d $'\0' FEEDFILE;
   do
     . "${FEEDFILE}" ;
     [ -z "${FEEDNAME}" ] && echo "error: missing FEEDNAME in ${FEEDFILE}" && exit 1
@@ -45,7 +49,7 @@ do_download(){
     RAWIP="${TEMPDIR}/$(basename ${FEEDFILE%.*}).ip"
 
     # download the feed
-    wget "${FEEDURL}" -O "${RAWFILE}" --no-check-certificate --quiet
+    wget "${FEEDURL}" -O "${RAWFILE}" --no-check-certificate --quiet --timeout=10
 
     # post-processing if the feed configures it
     #[ -n "${FEEDHANDLING}" ] && "${FEEDHANDLING}"
