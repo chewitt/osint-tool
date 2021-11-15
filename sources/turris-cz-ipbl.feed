@@ -1,0 +1,3 @@
+# Feed files must have FEEDURL and FEEDNAME content:
+FEEDURL="https://www.turris.cz/greylist-data/greylist-latest.csv"
+FEEDNAME="turris-cz-greylist"
