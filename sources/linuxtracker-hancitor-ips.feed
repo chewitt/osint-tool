@@ -1,0 +1,3 @@
+# Feed files must have FEEDURL and FEEDNAME content:
+FEEDURL="https://raw.githubusercontent.com/LinuxTracker/Blocklists/master/HancitorIPs.txt"
+FEEDNAME="linuxtracker-hancitor-ips"

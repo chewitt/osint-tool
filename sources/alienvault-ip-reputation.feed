@@ -1,0 +1,3 @@
+# Feed files must have FEEDURL and FEEDNAME content:
+FEEDURL="http://reputation.alienvault.com/reputation.data"
+FEEDNAME="alienvault-ip-reputation"
