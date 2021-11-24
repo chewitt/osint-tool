@@ -10,7 +10,7 @@
 # 0 * * * * /bin/bash /opt/osint-tool/osint-tool -d
 
 # set install and publish paths
-INSTALL="/opt/osint-tool"
+INSTALL="/opt/osintd"
 OSINTAT="/var/www/html/feeds/osint-attributes.csv"
 OSINTIP="/var/www/html/feeds/osint-ips.csv"
 

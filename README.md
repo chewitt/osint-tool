@@ -1,12 +1,12 @@
-# osint-tool
+# osintd
 
-osint-tool is a low-tech tool written in bash for managing the download of OSINT threat intelligence feeds for SOC tools. The main features are:
+osintd is a low-tech tool written in bash for managing the download of OSINT threat intelligence feeds for SOC tools. The main features are:
 
 - Downloading feeds with IP indicators
-- Combining feeds, deduplicating and sorting indicators
+- Combining feeds and appending feed source
 - Applying static allow/block overrides
 - Manipulating feeds for use with Fidelis solutions
-- Publising (via nginx/apache)
+- Publishing (via nginx/apache)
 
 Feed automation is handled via cron on the host system.
 
